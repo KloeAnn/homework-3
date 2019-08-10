@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <title>homework3</title>
+    <link rel="stylesheet" type="text/css" href="../../resources/css/ext-all.css"/>
+    <!-- LIBS -->
+    <script type="text/javascript" src="../../adapter/ext/ext-base.js"></script>
+    <!-- ENDLIBS -->
+    <script type="text/javascript" src="../../ext-all.js"></script>
+    <script>
+        Ext.onReady(function() {
+            var root=new Ext.tree.TreeNode({text:'root'})
+
+            var class1=new Ext.tree.TreeNode({
+                text:'class1',
+                checked:false
+            })
+            var class2=new Ext.tree.TreeNode({
+                text:'class2',
+                checked:false
+            })
+
+            var student1=new Ext.tree.TreeNode({
+                text:'student1',
+                checked:false,
+                leaf:true
+            })
+
+            var addNewStudent=function(node){
+                if(node.childNodes){
+                    var newStudent = new Ext.tree.TreeNode({
+                        text:'new student',
+                        checked:false,
+                        leaf:true
+                    })
+                    node.appendChild(newStudent)
+                }else {
+                    var newStudent = new Ext.tree.TreeNode({
+                        text:'new student',
+                        checked:false,
+                        leaf:true
+                    })
+                    node.parentNode.appendChild(newStudent)
+                }
+            }
+
+            var addNewClass=function(node){
+                if(node.childNodes){
+                    var newClass = new Ext.tree.TreeNode({
+                        text:'new class',
+                        checked:false
+                    })
+                    node.parentNode.appendChild(newClass)
+                }else {
+                    var newClass = new Ext.tree.TreeNode({
+                        text:'new class',
+                        checked:false
+                    })
+                    node.parentNode.parentNode.appendChild(newClass)
+                }
+            }
+
+            root.appendChild(class1)
+            root.appendChild(class2)
+            class1.appendChild(student1)
+
+            var menu = new Ext.menu.Menu({
+                items: [{
+                    id: 'addStudent',
+                    text: 'Add Student'
+                },{
+                    id: 'addClass',
+                    text: 'Add Class'
+                }],
+                listeners: {
+                    itemclick: function(item) {
+                        switch (item.id) {
+                            case 'addStudent':
+                                var currentNode = item.parentMenu.contextNode;
+                                addNewStudent(currentNode)
+                                break;
+                            case 'addClass':
+                                var currentNode = item.parentMenu.contextNode;
+                                addNewClass(currentNode)
+                                break;
+                        }
+                    }
+                }
+            });
+
+            var tree=new Ext.tree.TreePanel({
+                id:'tree',
+                // renderTo:'test',
+                root:root,
+                rootVisible:false,
+                contextMenu:menu,
+                width:500,
+                listeners:{
+                    contextmenu:function (node, e) {
+                        node.select();
+                        var treeContextMenu = node.getOwnerTree().contextMenu;
+                        treeContextMenu.contextNode = node;
+                        treeContextMenu.showAt(e.getXY());
+                    },
+                    'checkChange':function (node) {
+                        var checked=node.attributes.checked
+                        if(checked){
+                            console.log(tree.getChecked())
+                            tree.getChecked().map(function (item) {
+                                item.attributes.checked=false
+                            })
+                            node.attributes.checked=true
+                            console.log(tree.getChecked())
+                        }
+                    }
+                }
+            })
+
+            var editorTree=new Ext.tree.TreeEditor(tree,{allowBlank:false},{
+                listeners:{
+                    complete:function (editor,newVal,oldVal) {
+                        Ext.Msg.alert("You have changed "+oldVal+" to "+newVal)
+                    }
+                }
+            })
+            var store1=new Ext.data.ArrayStore({
+                fields:['id','class'],
+                data:[],
+            })
+            var comboBox=new Ext.form.ComboBox({
+                // renderTo:'test',
+                width:400,
+                id:'addType',
+                fieldLabel:'type',
+                emptyText:'choose type of added item',
+                mode:'local',
+                defaultValue:0,
+                store: new Ext.data.ArrayStore({
+                    id:'data',
+                    fields:['type','description'],
+                    data:[['class','add a new class'],['student','add a new student']],
+                }),
+                valueField:'type',
+                displayField:'description',
+                listeners:{
+                    'select':function (combo,record,index) {
+                        if(record.data.type=='student'){
+                            selectBox.show()
+                            var data=root.childNodes.map(function (item) {
+                                return [item.text,item.text]
+                            })
+                            store1.loadData(data)
+                            console.log(store1)
+                        }
+                    }
+                }
+            })
+            var selectBox=new Ext.form.ComboBox({
+                // renderTo:'test',
+                width:400,
+                id:'selectCalss',
+                fieldLabel:'class',
+                emptyText:'choose class',
+                hidden:true,
+                mode:'local',
+                defaultValue:'',
+                store:store1,
+                valueField:'id',
+                displayField:'class',
+            })
+            var button=new Ext.Button({
+                id:'addBtn',
+                text:'add item',
+                // renderTo:'test',
+                listeners:{
+                    'click':function () {
+                        var type=Ext.getCmp('addType').value
+                        switch (type) {
+                            case 'student':
+                                var val=selectBox.getValue()
+                                if(val==''){
+                                    Ext.Msg.alert('choose class first!')
+                                }else {
+                                    var targetNode=root.findChild('text',val,false)
+                                    var newStudent = new Ext.tree.TreeNode({
+                                        text:'new student',
+                                        checked:false,
+                                        leaf:true
+                                    })
+                                    targetNode.appendChild(newStudent)
+                                }
+                                break
+                            case 'class':
+                                var newClass = new Ext.tree.TreeNode({
+                                    text:'new class',
+                                    checked:false
+                                })
+                                root.appendChild(newClass)
+                                break;
+                        }
+                    }
+                }
+            })
+            var panel=new Ext.form.FormPanel({
+                renderTo:'test',
+                layout:'form',
+                title:'student management',
+                labelAlign: 'center',
+                labelWidth: 30,
+                width:500,
+                items:[
+                    'tree','addType','selectCalss','addBtn'
+                ]
+            })
+        });
+    </script>
+</head>
+<body>
+<div id="test"></div>
+</body>
+</html>
